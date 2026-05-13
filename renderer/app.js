@@ -21,7 +21,10 @@ function updateCharacterList() {
     container.innerHTML = '<span class="muted">Chưa có nhân vật đã lưu.</span>';
     return;
   }
-  savedCharacters.forEach((char) => {
+  savedCharacters.forEach((char, index) => {
+    const group = document.createElement('div');
+    group.className = 'char-group';
+
     const btn = document.createElement('button');
     btn.className = 'char-btn';
     btn.innerText = char.name;
@@ -30,7 +33,25 @@ function updateCharacterList() {
       $('charName').value = char.name;
       log(`Đã chọn nhân vật: ${char.name}`);
     };
-    container.appendChild(btn);
+
+    const del = document.createElement('button');
+    del.className = 'char-delete-btn';
+    del.innerText = 'Xóa';
+    del.onclick = async () => {
+      if (!confirm(`Xóa nhân vật "${char.name}"?`)) return;
+      savedCharacters.splice(index, 1);
+      if ($('charName').value.trim() === char.name) {
+        $('charName').value = '';
+        $('profile').value = '';
+      }
+      updateCharacterList();
+      await saveConfig();
+      log(`Đã xóa nhân vật: ${char.name}`);
+    };
+
+    group.appendChild(btn);
+    group.appendChild(del);
+    container.appendChild(group);
   });
 }
 

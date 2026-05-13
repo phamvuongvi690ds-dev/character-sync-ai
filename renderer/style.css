@@ -22,3 +22,7 @@ button:hover { filter:brightness(1.08); }
 .muted, small { color:var(--muted); }
 pre { white-space:pre-wrap; color:#cbd5e1; max-height:220px; overflow:auto; margin:0; }
 @media (max-width: 900px) { .two { grid-template-columns:1fr; } header { flex-direction:column; align-items:flex-start; } }
+
+.char-group { display:flex; align-items:center; gap:4px; background:#0b1220; border:1px solid #334155; border-radius:10px; padding:4px; }
+.char-delete-btn { background:#ef4444; color:#fff; padding:8px 10px; font-size:12px; }
+.char-delete-btn:hover { filter:brightness(1.1); }
