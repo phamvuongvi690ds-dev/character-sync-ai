@@ -134,12 +134,12 @@ async function savePrompts() {
   log(`Đã lưu: ${filePath}`);
 }
 
-$('saveConfigBtn').onclick = saveConfig;
-$('pickImageBtn').onclick = pickImage;
-$('analyzeBtn').onclick = analyzeCharacter;
-$('generatePromptsBtn').onclick = generatePrompts;
-$('savePromptsBtn').onclick = savePrompts;
-$('copyProfileBtn').onclick = async () => { await navigator.clipboard.writeText($('profile').value); log('Đã copy profile.'); };
+$('saveConfigBtn') && ($('saveConfigBtn').onclick = saveConfig);
+$('pickImageBtn') && ($('pickImageBtn').onclick = pickImage);
+$('analyzeBtn') && ($('analyzeBtn').onclick = analyzeCharacter);
+$('generatePromptsBtn') && ($('generatePromptsBtn').onclick = generatePrompts);
+$('savePromptsBtn') && ($('savePromptsBtn').onclick = savePrompts);
+if ($('copyProfileBtn')) $('copyProfileBtn').onclick = async () => { await navigator.clipboard.writeText($('profile').value); log('Đã copy profile.'); };
 
 async function pickVideo() {
   selectedVideo = await window.api.readVideo();
@@ -172,8 +172,8 @@ async function analyzeScript() {
   log('Đã phân tích xong.');
 }
 
-$('pickVideoBtn').onclick = pickVideo;
-$('analyzeScriptBtn').onclick = analyzeScript;
+$('pickVideoBtn') && ($('pickVideoBtn').onclick = pickVideo);
+$('analyzeScriptBtn') && ($('analyzeScriptBtn').onclick = analyzeScript);
 async function writeAIScript() {
   await saveConfig();
   const topic = $('aiStoryTopic').value.trim();
@@ -215,5 +215,5 @@ Requirements:
   log('Đã viết kịch bản xong.');
 }
 
-$('writeScriptBtn').onclick = writeAIScript;
+$('writeScriptBtn') && ($('writeScriptBtn').onclick = writeAIScript);
 loadConfig();
