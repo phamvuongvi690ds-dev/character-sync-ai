@@ -14,9 +14,10 @@ function loadConfig() {
         }
     } catch (e) { console.error(e); }
     return {
-        baseUrl: 'http://93.127.141.198:8000',
+        baseUrl: 'https://answers-name-theology-ruling.trycloudflare.com',
         apiKey: '8d68d3f65067ce72c04ecb600f2a29dd5c518282e3c018f2',
-        model: 'gemini-2.5-flash'
+        model: 'gemini-2.5-flash',
+        savedCharacters: []
     };
 }
 

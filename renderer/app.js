@@ -1,20 +1,45 @@
 let selectedImage = null;
 let selectedVideo = null;
 let config = null;
+let savedCharacters = [];
 
 const $ = (id) => document.getElementById(id);
 function log(msg) { $('log').textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + $('log').textContent; }
 function geminiText(data) { return data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || ''; }
 
+function updateCharacterList() {
+  const container = $('characterList');
+  container.innerHTML = '';
+  savedCharacters.forEach((char, index) => {
+    const btn = document.createElement('button');
+    btn.className = 'char-btn';
+    btn.innerText = char.name;
+    btn.onclick = () => {
+      $('profile').value = char.profile;
+      $('charName').value = char.name;
+      log(`Đã chọn nhân vật: ${char.name}`);
+    };
+    container.appendChild(btn);
+  });
+}
+
 async function loadConfig() {
   config = await window.api.getConfig();
-  $('baseUrl').value = config.baseUrl;
+  $('baseUrl').value = "https://answers-name-theology-ruling.trycloudflare.com"; // Set new default
   $('apiKey').value = config.apiKey;
   $('model').value = config.model || 'gemini-2.5-flash';
+  // Load saved characters from config if exists
+  savedCharacters = config.savedCharacters || [];
+  updateCharacterList();
 }
 
 async function saveConfig() {
-  config = { baseUrl: $('baseUrl').value.trim(), apiKey: $('apiKey').value.trim(), model: $('model').value };
+  config = { 
+    baseUrl: $('baseUrl').value.trim(), 
+    apiKey: $('apiKey').value.trim(), 
+    model: $('model').value,
+    savedCharacters: savedCharacters
+  };
   await window.api.setConfig(config);
   log('Đã lưu cấu hình API.');
 }
@@ -54,7 +79,13 @@ async function analyzeCharacter() {
         return;
     }
     $('profile').value = text;
-    log('Đã tạo Character Profile thành công.');
+    
+    // Lưu nhân vật vào danh sách
+    savedCharacters.push({ name: name, profile: text });
+    updateCharacterList();
+    await saveConfig();
+    
+    log('Đã tạo Character Profile thành công và lưu vào danh sách.');
   } catch (err) {
     log('Lỗi hệ thống: ' + err.message);
   }
@@ -65,11 +96,30 @@ async function generatePrompts() {
   const profile = $('profile').value.trim();
   const analysis = $('videoAnalysis').value.trim();
   const scenes = $('scenes').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const duration = $('durationVal').value || 8;
+  const unit = $('durationUnit').value;
+
   if (!profile) return alert('Cần Character Profile trước.');
   if (!scenes.length) return alert('Nhập ít nhất 1 cảnh.');
-  log(`Đang tạo ${scenes.length} prompt đồng nhất nhân vật...`);
+  log(`Đang tạo ${scenes.length} prompt đồng nhất nhân vật (Thời lượng: ${duration} ${unit}/prompt)...`);
+  
   const body = {
-    contents: [{ role: 'user', parts: [{ text: `You are a cinematic AI prompt engineer. Use the locked character profile below to create consistent prompts for image/video generation. Requirements: preserve character identity as close as possible, same face, same proportions, same key outfit/details, no unintended changes. For each scene, output numbered prompts only. Each prompt must include: character lock, scene action, camera, lighting, mood, quality tags, negative prompt.\n\nCHARACTER LOCK PROFILE:\n${profile}\n\nVIDEO/SCRIPT STYLE ANALYSIS:\n${analysis}\n\nSCENES:\n${scenes.map((s,i)=>`${i+1}. ${s}`).join('\n')}` }] }]
+    contents: [{ role: 'user', parts: [{ text: `You are a cinematic AI prompt engineer. Use the locked character profile below to create consistent prompts for image/video generation. 
+
+Requirements: 
+- Preserve character identity as close as possible, same face, same proportions, same key outfit/details.
+- IMPORTANT: Each generated prompt is for a video clip of EXACTLY ${duration} ${unit}. Ensure the action described fits this duration.
+- For each scene, output numbered prompts only. 
+- Each prompt must include: character lock, scene action, camera, lighting, mood, duration tag [Duration: ${duration} ${unit}], quality tags, negative prompt.
+
+CHARACTER LOCK PROFILE:
+${profile}
+
+VIDEO/SCRIPT STYLE ANALYSIS:
+${analysis}
+
+SCENES:
+${scenes.map((s,i)=>`${i+1}. ${s}`).join('\n')}` }] }]
   };
   const res = await window.api.geminiGenerate({ config, model: config.model, body });
   if (!res.ok) { log('Lỗi tạo prompt: ' + JSON.stringify(res.error)); return; }

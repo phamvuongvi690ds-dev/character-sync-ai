@@ -40,8 +40,8 @@
       <textarea id="manualNotes" placeholder="Ghi chú thêm: tuổi, style, trang phục cố định, điều cấm thay đổi..."></textarea>
       <div class="row">
         <button id="analyzeBtn">Phân tích & khóa nhân vật</button>
-        <button id="copyProfileBtn">Copy profile</button>
       </div>
+      <div id="characterList" class="row wrap" style="margin-top:10px; gap:8px;"></div>
     </div>
   </section>
 
@@ -69,6 +69,14 @@
     </div>
     <div class="card">
       <h2>4. Batch scenes</h2>
+      <div class="row">
+        <label style="margin:0">Thời lượng mỗi prompt:</label>
+        <input id="durationVal" type="number" value="8" style="width:70px" />
+        <select id="durationUnit" style="width:80px">
+          <option value="giây">Giây</option>
+          <option value="phút">Phút</option>
+        </select>
+      </div>
       <textarea id="scenes" placeholder="Mỗi dòng là 1 cảnh. Nếu để trống, tool tự tạo scenes từ Video Analysis."></textarea>
       <div class="row">
         <button id="generatePromptsBtn">Tạo prompt hàng loạt</button>
