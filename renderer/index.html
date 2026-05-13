@@ -10,7 +10,7 @@
   <header>
     <div>
       <h1>CharacterSync AI</h1>
-      <p>Tạo prompt đồng nhất nhân vật bằng Gemini Vertex Gateway.</p>
+      <p>Tạo kịch bản + prompt đồng nhất nhân vật bằng Gemini Vertex Gateway.</p>
     </div>
     <button id="saveConfigBtn">Lưu cấu hình</button>
   </header>
@@ -27,7 +27,7 @@
         <option value="gemini-2.5-flash">gemini-2.5-flash</option>
         <option value="gemini-2.5-pro">gemini-2.5-pro</option>
       </select>
-      <small>Tool hiện tập trung: phân tích nhân vật + tạo prompt hàng loạt. Không cam kết giống 100%, nhưng prompt được tối ưu để khóa đặc điểm.</small>
+      <small>Tool tối ưu prompt để giữ nhân vật nhất quán nhất có thể; AI không thể đảm bảo giống tuyệt đối 100%.</small>
     </div>
 
     <div class="card">
@@ -38,55 +38,43 @@
       </div>
       <div id="imageInfo" class="muted">Chưa chọn ảnh.</div>
       <textarea id="manualNotes" placeholder="Ghi chú thêm: tuổi, style, trang phục cố định, điều cấm thay đổi..."></textarea>
-      <div class="row">
-        <button id="analyzeBtn">Phân tích & khóa nhân vật</button>
-      </div>
-      <div id="characterList" class="row wrap" style="margin-top:10px; gap:8px;"></div>
-    </div>
-  </section>
-
-  <section class="grid two">
-    <div class="card">
-      <h2>3. Nguồn kịch bản / video mẫu</h2>
-      <label>Kịch bản hoặc mô tả video mẫu</label>
-      <textarea id="scriptInput" placeholder="Dán kịch bản video, transcript, outline, hoặc mô tả video mẫu ở đây..."></textarea>
-      <div class="row">
-        <button id="pickVideoBtn">Upload video mẫu</button>
-        <button id="analyzeScriptBtn">Phân tích kịch bản/video</button>
-      </div>
-      <div id="videoInfo" class="muted">Chưa chọn video.</div>
-    </div>
-
-    <div class="card">
-      <h2>3b. AI Tự viết kịch bản</h2>
-      <label>Chủ đề / Câu chuyện</label>
-      <textarea id="aiStoryTopic" placeholder="Ví dụ: Goku đi lạc vào thế giới zombie và chiến đấu bảo vệ trẻ em..."></textarea>
-      <div class="row">
-        <label style="margin:0">Tổng độ dài:</label>
-        <input id="totalDurationVal" type="number" value="1" style="width:60px" />
-        <select id="totalDurationUnit" style="width:80px">
-          <option value="phút">Phút</option>
-          <option value="giây">Giây</option>
-        </select>
-        <button id="writeScriptBtn">AI Viết kịch bản</button>
-      </div>
+      <button id="analyzeBtn">Phân tích & lưu nhân vật</button>
+      <h3>Danh sách nhân vật đã lưu</h3>
+      <div id="characterList" class="row wrap"></div>
     </div>
   </section>
 
   <section class="grid two">
     <div class="card">
       <h2>Character Profile</h2>
-      <textarea id="profile" placeholder="Profile nhân vật sẽ hiện ở đây..."></textarea>
+      <textarea id="profile" placeholder="Bấm vào nhân vật đã lưu để xem prompt phân tích..."></textarea>
     </div>
+
     <div class="card">
-      <h2>Video Analysis / AI Script</h2>
-      <textarea id="videoAnalysis" placeholder="Phân tích nội dung, nhịp dựng, shot list, hoặc kịch bản AI sẽ hiện ở đây..."></textarea>
+      <h2>3. Phân tích kịch bản / video mẫu</h2>
+      <label>Kịch bản, transcript, outline hoặc mô tả video mẫu</label>
+      <textarea id="scriptInput" placeholder="Dán kịch bản hoặc mô tả video mẫu ở đây..."></textarea>
+      <div class="row">
+        <button id="pickVideoBtn">Upload video mẫu</button>
+        <button id="analyzeScriptBtn">Phân tích kịch bản/video</button>
+      </div>
+      <div id="videoInfo" class="muted">Chưa chọn video.</div>
     </div>
   </section>
 
   <section class="grid two">
     <div class="card">
-      <h2>4. Batch scenes</h2>
+      <h2>4. AI Tự viết kịch bản + prompt</h2>
+      <label>Chủ đề / Câu chuyện</label>
+      <textarea id="aiStoryTopic" placeholder="Ví dụ: Goku đi lạc vào thế giới zombie và chiến đấu bảo vệ trẻ em..."></textarea>
+      <div class="row">
+        <label style="margin:0">Tổng độ dài:</label>
+        <input id="totalDurationVal" type="number" value="3" style="width:70px" />
+        <select id="totalDurationUnit" style="width:80px">
+          <option value="phút">Phút</option>
+          <option value="giây">Giây</option>
+        </select>
+      </div>
       <div class="row">
         <label style="margin:0">Thời lượng mỗi prompt:</label>
         <input id="durationVal" type="number" value="8" style="width:70px" />
@@ -95,17 +83,21 @@
           <option value="phút">Phút</option>
         </select>
       </div>
-      <textarea id="scenes" placeholder="Mỗi dòng là 1 cảnh. Nếu để trống, tool tự tạo scenes từ Video Analysis."></textarea>
-      <div class="row">
-        <button id="generatePromptsBtn">Tạo prompt hàng loạt</button>
-        <button id="savePromptsBtn">Lưu .txt</button>
-      </div>
+      <button id="writeScriptBtn">AI Viết kịch bản + tạo prompt</button>
+    </div>
+
+    <div class="card">
+      <h2>Video Analysis / AI Script</h2>
+      <textarea id="videoAnalysis" placeholder="Phân tích hoặc kịch bản AI sẽ hiện ở đây..."></textarea>
     </div>
   </section>
 
   <section class="card">
-    <h2>Kết quả prompt</h2>
-    <textarea id="output" placeholder="Prompt đã tối ưu sẽ hiện ở đây..."></textarea>
+    <div class="row" style="justify-content:space-between">
+      <h2>Kết quả prompt</h2>
+      <button id="savePromptsBtn">Tải file .txt prompt về máy</button>
+    </div>
+    <textarea id="output" placeholder="Prompt đầy đủ sẽ hiện ở đây..."></textarea>
   </section>
 
   <section class="card">

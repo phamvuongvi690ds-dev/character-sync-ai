@@ -6,11 +6,22 @@ let savedCharacters = [];
 const $ = (id) => document.getElementById(id);
 function log(msg) { $('log').textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + $('log').textContent; }
 function geminiText(data) { return data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('\n') || ''; }
+function durationToSeconds(value, unit) { return Math.max(1, Number(value || 1)) * (unit === 'phút' ? 60 : 1); }
+
+function selectedCharacterProfile() {
+  const currentName = $('charName').value.trim().toLowerCase();
+  const matched = savedCharacters.find(c => c.name.toLowerCase() === currentName);
+  return matched?.profile || $('profile').value.trim();
+}
 
 function updateCharacterList() {
   const container = $('characterList');
   container.innerHTML = '';
-  savedCharacters.forEach((char, index) => {
+  if (!savedCharacters.length) {
+    container.innerHTML = '<span class="muted">Chưa có nhân vật đã lưu.</span>';
+    return;
+  }
+  savedCharacters.forEach((char) => {
     const btn = document.createElement('button');
     btn.className = 'char-btn';
     btn.innerText = char.name;
@@ -25,10 +36,9 @@ function updateCharacterList() {
 
 async function loadConfig() {
   config = await window.api.getConfig();
-  $('baseUrl').value = "https://answers-name-theology-ruling.trycloudflare.com"; // Set new default
+  $('baseUrl').value = config.baseUrl || 'https://answers-name-theology-ruling.trycloudflare.com';
   $('apiKey').value = config.apiKey;
   $('model').value = config.model || 'gemini-2.5-flash';
-  // Load saved characters from config if exists
   savedCharacters = config.savedCharacters || [];
   updateCharacterList();
 }
@@ -38,10 +48,10 @@ async function saveConfig() {
     baseUrl: $('baseUrl').value.trim(), 
     apiKey: $('apiKey').value.trim(), 
     model: $('model').value,
-    savedCharacters: savedCharacters
+    savedCharacters
   };
   await window.api.setConfig(config);
-  log('Đã lưu cấu hình API.');
+  log('Đã lưu cấu hình.');
 }
 
 async function pickImage() {
@@ -51,80 +61,109 @@ async function pickImage() {
 
 async function analyzeCharacter() {
   await saveConfig();
-  if (!selectedImage) {
-    alert('Vui lòng chọn ảnh nhân vật trước.');
-    return;
-  }
-  const name = $('charName').value.trim() || 'Character';
+  if (!selectedImage) return alert('Vui lòng chọn ảnh nhân vật trước.');
+  const name = $('charName').value.trim() || `Character ${savedCharacters.length + 1}`;
   const notes = $('manualNotes').value.trim();
   log(`Đang phân tích nhân vật ${name} bằng ${config.model}...`);
-  
-  try {
-    const body = {
-      contents: [{
-        parts: [
-          { text: `Analyze this reference image and create a strict reusable CHARACTER LOCK PROFILE for image/video prompts. Character name: ${name}. Extra notes: ${notes || 'none'}. Output in English. Include: facial identity, hair, body, outfit, colors, unique marks, style lock, do-not-change rules, negative prompt. Be concise but highly specific. State that future prompts must preserve the same identity, same face, same proportions, same outfit unless explicitly changed.` },
-          { inlineData: { mimeType: selectedImage.mime, data: selectedImage.base64 } }
-        ]
-      }]
-    };
-    const res = await window.api.geminiGenerate({ config, model: config.model, body });
-    if (!res.ok) { 
-      log('Lỗi phân tích: ' + (typeof res.error === 'object' ? JSON.stringify(res.error) : res.error)); 
-      return; 
-    }
-    const text = geminiText(res.data);
-    if (!text) {
-        log('Lỗi: AI không trả về dữ liệu phân tích.');
-        return;
-    }
-    $('profile').value = text;
-    
-    // Lưu nhân vật vào danh sách
-    savedCharacters.push({ name: name, profile: text });
-    updateCharacterList();
-    await saveConfig();
-    
-    log('Đã tạo Character Profile thành công và lưu vào danh sách.');
-  } catch (err) {
-    log('Lỗi hệ thống: ' + err.message);
-  }
+  const body = {
+    contents: [{ parts: [
+      { text: `Analyze this reference image and create a strict reusable CHARACTER LOCK PROFILE for image/video prompts. Character name: ${name}. Extra notes: ${notes || 'none'}. Output in English. Include: facial identity, hair, body, outfit, colors, unique marks, style lock, do-not-change rules, negative prompt. Be concise but highly specific. State that future prompts must preserve the same identity, same face, same proportions, same outfit unless explicitly changed.` },
+      { inlineData: { mimeType: selectedImage.mime, data: selectedImage.base64 } }
+    ]}]
+  };
+  const res = await window.api.geminiGenerate({ config, model: config.model, body });
+  if (!res.ok) { log('Lỗi phân tích: ' + JSON.stringify(res.error)); return; }
+  const text = geminiText(res.data);
+  if (!text) return log('Lỗi: AI không trả về dữ liệu phân tích.');
+  $('profile').value = text;
+  const existing = savedCharacters.findIndex(c => c.name.toLowerCase() === name.toLowerCase());
+  if (existing >= 0) savedCharacters[existing] = { name, profile: text };
+  else savedCharacters.push({ name, profile: text });
+  updateCharacterList();
+  await saveConfig();
+  log('Đã phân tích và lưu nhân vật.');
 }
 
-async function generatePrompts() {
+async function pickVideo() {
+  selectedVideo = await window.api.readVideo();
+  if (selectedVideo?.error) { alert(selectedVideo.error); selectedVideo = null; return; }
+  $('videoInfo').textContent = selectedVideo ? `Đã chọn: ${selectedVideo.filePath} (${Math.round(selectedVideo.size/1024/1024)}MB)` : 'Chưa chọn video.';
+}
+
+async function analyzeScript() {
   await saveConfig();
-  const profile = $('profile').value.trim();
-  const analysis = $('videoAnalysis').value.trim();
-  const scenes = $('scenes').value.split('\n').map(s => s.trim()).filter(Boolean);
-  const duration = $('durationVal').value || 8;
-  const unit = $('durationUnit').value;
+  const scriptText = $('scriptInput').value.trim();
+  if (!scriptText && !selectedVideo) return alert('Dán kịch bản hoặc chọn video mẫu.');
+  log('Đang phân tích kịch bản/video...');
+  const parts = [{ text: `Analyze this video/script deeply for recreating similar content with a consistent character. Extract: story structure, hook, pacing, camera angles, visual style, mood, scene list, and prompt-ready visual beats. Script/Description: ${scriptText || 'none'}` }];
+  if (selectedVideo) parts.push({ inlineData: { mimeType: selectedVideo.mime, data: selectedVideo.base64 } });
+  const res = await window.api.geminiGenerate({ config, model: config.model, body: { contents: [{ parts }] } });
+  if (!res.ok) { log('Lỗi phân tích video: ' + JSON.stringify(res.error)); return; }
+  $('videoAnalysis').value = geminiText(res.data);
+  log('Đã phân tích kịch bản/video.');
+}
 
-  if (!profile) return alert('Cần Character Profile trước.');
-  if (!scenes.length) return alert('Nhập ít nhất 1 cảnh.');
-  log(`Đang tạo ${scenes.length} prompt đồng nhất nhân vật (Thời lượng: ${duration} ${unit}/prompt)...`);
-  
+async function writeAIScript() {
+  await saveConfig();
+  const topic = $('aiStoryTopic').value.trim() || $('scriptInput').value.trim();
+  const totalValue = $('totalDurationVal').value || 3;
+  const totalUnit = $('totalDurationUnit').value;
+  const perValue = $('durationVal').value || 8;
+  const perUnit = $('durationUnit').value;
+  const totalSeconds = durationToSeconds(totalValue, totalUnit);
+  const perSeconds = durationToSeconds(perValue, perUnit);
+  const promptCount = Math.ceil(totalSeconds / perSeconds);
+  const profile = selectedCharacterProfile();
+  const charName = $('charName').value.trim() || 'Selected character';
+  const referenceAnalysis = $('videoAnalysis').value.trim();
+
+  if (!topic) return alert('Nhập chủ đề/kịch bản hoặc phân tích video mẫu trước.');
+  if (!profile) return alert('Chọn hoặc phân tích nhân vật trước.');
+
+  log(`Đang tạo kịch bản ${totalValue} ${totalUnit}; cần ${promptCount} prompt, mỗi prompt ${perValue} ${perUnit}...`);
+
   const body = {
-    contents: [{ role: 'user', parts: [{ text: `You are a cinematic AI prompt engineer. Use the locked character profile below to create consistent prompts for image/video generation. 
+    contents: [{ role: 'user', parts: [{ text: `You are a professional cinematic script writer and AI prompt engineer.
 
-Requirements: 
-- Preserve character identity as close as possible, same face, same proportions, same key outfit/details.
-- IMPORTANT: Each generated prompt is for a video clip of EXACTLY ${duration} ${unit}. Ensure the action described fits this duration.
-- For each scene, output numbered prompts only. 
-- Each prompt must include: character lock, scene action, camera, lighting, mood, duration tag [Duration: ${duration} ${unit}], quality tags, negative prompt.
+TASK:
+Create a complete video script AND exactly ${promptCount} production-ready prompts.
 
+TOTAL VIDEO LENGTH: ${totalValue} ${totalUnit} (${totalSeconds} seconds)
+EACH PROMPT DURATION: ${perValue} ${perUnit} (${perSeconds} seconds)
+NUMBER OF PROMPTS REQUIRED: exactly ${promptCount}
+
+TOPIC / STORY:
+${topic}
+
+REFERENCE VIDEO/SCRIPT ANALYSIS TO FOLLOW IF AVAILABLE:
+${referenceAnalysis || 'None'}
+
+CHARACTER NAME: ${charName}
 CHARACTER LOCK PROFILE:
 ${profile}
 
-VIDEO/SCRIPT STYLE ANALYSIS:
-${analysis}
+STRICT REQUIREMENTS:
+1. Use the saved character profile above as the source of truth.
+2. Every prompt must preserve the same character identity as consistently as possible: same face, same proportions, same hair, same outfit, same key details, same age/style, unless explicitly changed by the user.
+3. Output exactly ${promptCount} prompts, no fewer and no more.
+4. Each prompt must represent exactly ${perSeconds} seconds of video action.
+5. The prompts together must cover the full ${totalSeconds}-second story.
+6. Each prompt must include: Prompt number, timestamp range, duration tag, character lock phrase, action, camera movement, lighting, mood, environment, quality/style tags, and negative prompt.
+7. Do not use vague prompts. Make each prompt detailed enough for image/video generation.
 
-SCENES:
-${scenes.map((s,i)=>`${i+1}. ${s}`).join('\n')}` }] }]
+OUTPUT FORMAT:
+A) FULL SCRIPT
+B) PROMPT LIST (${promptCount} prompts)
+
+Write in English for prompts, but section labels can be simple.` }] }]
   };
+
   const res = await window.api.geminiGenerate({ config, model: config.model, body });
-  if (!res.ok) { log('Lỗi tạo prompt: ' + JSON.stringify(res.error)); return; }
-  $('output').value = geminiText(res.data);
-  log('Đã tạo prompt hàng loạt.');
+  if (!res.ok) { log('Lỗi viết kịch bản/prompt: ' + JSON.stringify(res.error)); return; }
+  const text = geminiText(res.data);
+  $('videoAnalysis').value = text;
+  $('output').value = text;
+  log(`Đã tạo xong ${promptCount} prompt.`);
 }
 
 async function savePrompts() {
@@ -137,83 +176,9 @@ async function savePrompts() {
 $('saveConfigBtn') && ($('saveConfigBtn').onclick = saveConfig);
 $('pickImageBtn') && ($('pickImageBtn').onclick = pickImage);
 $('analyzeBtn') && ($('analyzeBtn').onclick = analyzeCharacter);
-$('generatePromptsBtn') && ($('generatePromptsBtn').onclick = generatePrompts);
-$('savePromptsBtn') && ($('savePromptsBtn').onclick = savePrompts);
-if ($('copyProfileBtn')) $('copyProfileBtn').onclick = async () => { await navigator.clipboard.writeText($('profile').value); log('Đã copy profile.'); };
-
-async function pickVideo() {
-  selectedVideo = await window.api.readVideo();
-  if (selectedVideo?.error) { alert(selectedVideo.error); selectedVideo = null; return; }
-  $('videoInfo').textContent = selectedVideo ? `Đã chọn: ${selectedVideo.filePath} (${Math.round(selectedVideo.size/1024/1024)}MB)` : 'Chưa chọn video.';
-}
-
-async function analyzeScript() {
-  await saveConfig();
-  const scriptText = $('scriptInput').value.trim();
-  if (!scriptText && !selectedVideo) return alert('Dán kịch bản hoặc chọn video mẫu.');
-  log(`Đang phân tích kịch bản/video...`);
-  
-  let parts = [{ text: `Analyze the following video/script to extract: 1. Core theme/story. 2. List of visual scenes/actions. 3. Camera angles & lighting style. 4. Pacing. Provide a summary suitable for recreating this style with a consistent character. Script/Description: ${scriptText || 'none'}` }];
-  if (selectedVideo) {
-    parts.push({ inlineData: { mimeType: selectedVideo.mime, data: selectedVideo.base64 } });
-  }
-
-  const res = await window.api.geminiGenerate({ config, model: 'gemini-1.5-pro', body: { contents: [{ parts }] } });
-  if (!res.ok) { log('Lỗi phân tích video: ' + JSON.stringify(res.error)); return; }
-  const analysis = geminiText(res.data);
-  $('videoAnalysis').value = analysis;
-  
-  // Tự động gợi ý scenes nếu chưa có
-  if (!$('scenes').value.trim()) {
-    log('Đang gợi ý scenes từ kịch bản...');
-    const suggestRes = await window.api.geminiGenerate({ config, body: { contents: [{ parts: [{ text: `Extract only a list of visual scenes (one per line) from this analysis for image/video generation: ${analysis}` }] }] } });
-    if (suggestRes.ok) $('scenes').value = geminiText(suggestRes.data);
-  }
-  log('Đã phân tích xong.');
-}
-
 $('pickVideoBtn') && ($('pickVideoBtn').onclick = pickVideo);
 $('analyzeScriptBtn') && ($('analyzeScriptBtn').onclick = analyzeScript);
-async function writeAIScript() {
-  await saveConfig();
-  const topic = $('aiStoryTopic').value.trim();
-  const duration = $('totalDurationVal').value || 1;
-  const unit = $('totalDurationUnit').value;
-  const profile = $('profile').value.trim();
-
-  if (!topic) return alert('Nhập chủ đề muốn viết kịch bản.');
-  log(`Đang yêu cầu AI viết kịch bản video ${duration} ${unit}...`);
-
-  const body = {
-    contents: [{
-      parts: [{
-        text: `You are a professional video script writer. Write a detailed cinematic script based on the following topic and character profile.
-Topic: ${topic}
-Target Duration: ${duration} ${unit}
-Character Profile: ${profile || 'Standard cinematic character'}
-
-Requirements:
-1. Break the story into a sequence of specific visual scenes.
-2. For each scene, describe action, camera angle, and mood.
-3. Ensure the total duration of all scenes adds up to approximately ${duration} ${unit}.
-4. Provide a numbered list of scenes at the end, one scene per line, suitable for image/video generation prompts.`
-      }]
-    }]
-  };
-
-  const res = await window.api.geminiGenerate({ config, model: 'gemini-1.5-pro', body });
-  if (!res.ok) { log('Lỗi viết kịch bản: ' + JSON.stringify(res.error)); return; }
-  
-  const script = geminiText(res.data);
-  $('videoAnalysis').value = script;
-  
-  // Tự động trích xuất scenes
-  log('Đang trích xuất danh sách cảnh...');
-  const extractRes = await window.api.geminiGenerate({ config, body: { contents: [{ parts: [{ text: `Extract only a clean list of visual scenes (one per line, no extra text) from this script for prompt generation: ${script}` }] }] } });
-  if (extractRes.ok) $('scenes').value = geminiText(extractRes.ok ? extractRes.data : '');
-  
-  log('Đã viết kịch bản xong.');
-}
-
 $('writeScriptBtn') && ($('writeScriptBtn').onclick = writeAIScript);
+$('savePromptsBtn') && ($('savePromptsBtn').onclick = savePrompts);
+
 loadConfig();
