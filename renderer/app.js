@@ -148,14 +148,26 @@ STRICT REQUIREMENTS:
 3. Output exactly ${promptCount} prompts, no fewer and no more.
 4. Each prompt must represent exactly ${perSeconds} seconds of video action.
 5. The prompts together must cover the full ${totalSeconds}-second story.
-6. Each prompt must include: Prompt number, timestamp range, duration tag, character lock phrase, action, camera movement, lighting, mood, environment, quality/style tags, and negative prompt.
-7. Do not use vague prompts. Make each prompt detailed enough for image/video generation.
+6. Output format must be SIMPLE LINE PROMPTS, easy to copy into image/video tools.
+7. Each prompt must be a single paragraph line, no bullet points inside the prompt.
+8. Start every prompt with the character name and identity block, exactly like this style:
+   GOKU: An athletic Asian male martial artist in his 30s, spiky messy black hair, intense brown eyes, wearing a worn orange martial arts gi with a blue undershirt, a thick black belt tied at the waist, and dark wristbands. [scene/action/camera/lighting/style details].
+9. If the scene has multiple saved characters, include each identity block first, like:
+   CHARACTER_A: [identity]. CHARACTER_B: [identity]. [shared scene/action/camera/lighting/style details].
+10. Do NOT use headings inside each prompt. Do NOT output JSON. Do NOT output markdown tables.
+11. Before the prompt list, include a short FULL SCRIPT section. Then output PROMPT LIST.
+12. In PROMPT LIST, output exactly ${promptCount} prompts, no fewer and no more.
+13. Each prompt line must include: character identity block(s), visual action, setting, camera angle, lighting, mood, cinematic style, photorealistic, 8k, and [Duration: ${perSeconds}s].
+14. Keep character details repeated in every prompt so the image/video model keeps identity consistent.
+15. Avoid vague text like 'same character' unless the full character identity block is also included.
 
 OUTPUT FORMAT:
 A) FULL SCRIPT
 B) PROMPT LIST (${promptCount} prompts)
+1. CHARACTER_NAME: full identity block. Scene/action/camera/lighting/style, [Duration: ${perSeconds}s].
+2. CHARACTER_NAME: full identity block. Scene/action/camera/lighting/style, [Duration: ${perSeconds}s].
 
-Write in English for prompts, but section labels can be simple.` }] }]
+Write all prompt lines in English.` }] }]
   };
 
   const res = await window.api.geminiGenerate({ config, model: config.model, body });
