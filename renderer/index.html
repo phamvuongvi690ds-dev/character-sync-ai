@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CharacterSync AI</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>CharacterSync AI</h1>
+      <p>Tạo prompt đồng nhất nhân vật bằng Gemini Vertex Gateway.</p>
+    </div>
+    <button id="saveConfigBtn">Lưu cấu hình</button>
+  </header>
+
+  <section class="grid two">
+    <div class="card">
+      <h2>1. Cấu hình API</h2>
+      <label>Base URL</label>
+      <input id="baseUrl" />
+      <label>API Key</label>
+      <input id="apiKey" type="password" />
+      <label>Model Gemini</label>
+      <select id="model">
+        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+        <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+      </select>
+      <small>Tool hiện tập trung: phân tích nhân vật + tạo prompt hàng loạt. Không cam kết giống 100%, nhưng prompt được tối ưu để khóa đặc điểm.</small>
+    </div>
+
+    <div class="card">
+      <h2>2. Nhân vật</h2>
+      <div class="row">
+        <input id="charName" placeholder="Tên nhân vật, ví dụ: Goku" />
+        <button id="pickImageBtn">Upload ảnh</button>
+      </div>
+      <div id="imageInfo" class="muted">Chưa chọn ảnh.</div>
+      <textarea id="manualNotes" placeholder="Ghi chú thêm: tuổi, style, trang phục cố định, điều cấm thay đổi..."></textarea>
+      <div class="row">
+        <button id="analyzeBtn">Phân tích & khóa nhân vật</button>
+        <button id="copyProfileBtn">Copy profile</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid two">
+    <div class="card">
+      <h2>Character Profile</h2>
+      <textarea id="profile" placeholder="Profile nhân vật sẽ hiện ở đây..."></textarea>
+    </div>
+    <div class="card">
+      <h2>3. Nguồn kịch bản / video mẫu</h2>
+      <label>Kịch bản hoặc mô tả video mẫu</label>
+      <textarea id="scriptInput" placeholder="Dán kịch bản video, transcript, outline, hoặc mô tả video mẫu ở đây..."></textarea>
+      <div class="row">
+        <button id="pickVideoBtn">Upload video mẫu</button>
+        <button id="analyzeScriptBtn">Phân tích kịch bản/video</button>
+      </div>
+      <div id="videoInfo" class="muted">Chưa chọn video.</div>
+    </div>
+  </section>
+
+  <section class="grid two">
+    <div class="card">
+      <h2>Video Analysis</h2>
+      <textarea id="videoAnalysis" placeholder="Phân tích nội dung, nhịp dựng, shot list, visual style sẽ hiện ở đây..."></textarea>
+    </div>
+    <div class="card">
+      <h2>4. Batch scenes</h2>
+      <textarea id="scenes" placeholder="Mỗi dòng là 1 cảnh. Nếu để trống, tool tự tạo scenes từ Video Analysis."></textarea>
+      <div class="row">
+        <button id="generatePromptsBtn">Tạo prompt hàng loạt</button>
+        <button id="savePromptsBtn">Lưu .txt</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Kết quả prompt</h2>
+    <textarea id="output" placeholder="Prompt đã tối ưu sẽ hiện ở đây..."></textarea>
+  </section>
+
+  <section class="card">
+    <h2>Log</h2>
+    <pre id="log"></pre>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
