@@ -174,4 +174,46 @@ async function analyzeScript() {
 
 $('pickVideoBtn').onclick = pickVideo;
 $('analyzeScriptBtn').onclick = analyzeScript;
+async function writeAIScript() {
+  await saveConfig();
+  const topic = $('aiStoryTopic').value.trim();
+  const duration = $('totalDurationVal').value || 1;
+  const unit = $('totalDurationUnit').value;
+  const profile = $('profile').value.trim();
+
+  if (!topic) return alert('Nhập chủ đề muốn viết kịch bản.');
+  log(`Đang yêu cầu AI viết kịch bản video ${duration} ${unit}...`);
+
+  const body = {
+    contents: [{
+      parts: [{
+        text: `You are a professional video script writer. Write a detailed cinematic script based on the following topic and character profile.
+Topic: ${topic}
+Target Duration: ${duration} ${unit}
+Character Profile: ${profile || 'Standard cinematic character'}
+
+Requirements:
+1. Break the story into a sequence of specific visual scenes.
+2. For each scene, describe action, camera angle, and mood.
+3. Ensure the total duration of all scenes adds up to approximately ${duration} ${unit}.
+4. Provide a numbered list of scenes at the end, one scene per line, suitable for image/video generation prompts.`
+      }]
+    }]
+  };
+
+  const res = await window.api.geminiGenerate({ config, model: 'gemini-1.5-pro', body });
+  if (!res.ok) { log('Lỗi viết kịch bản: ' + JSON.stringify(res.error)); return; }
+  
+  const script = geminiText(res.data);
+  $('videoAnalysis').value = script;
+  
+  // Tự động trích xuất scenes
+  log('Đang trích xuất danh sách cảnh...');
+  const extractRes = await window.api.geminiGenerate({ config, body: { contents: [{ parts: [{ text: `Extract only a clean list of visual scenes (one per line, no extra text) from this script for prompt generation: ${script}` }] }] } });
+  if (extractRes.ok) $('scenes').value = geminiText(extractRes.ok ? extractRes.data : '');
+  
+  log('Đã viết kịch bản xong.');
+}
+
+$('writeScriptBtn').onclick = writeAIScript;
 loadConfig();

@@ -47,10 +47,6 @@
 
   <section class="grid two">
     <div class="card">
-      <h2>Character Profile</h2>
-      <textarea id="profile" placeholder="Profile nhân vật sẽ hiện ở đây..."></textarea>
-    </div>
-    <div class="card">
       <h2>3. Nguồn kịch bản / video mẫu</h2>
       <label>Kịch bản hoặc mô tả video mẫu</label>
       <textarea id="scriptInput" placeholder="Dán kịch bản video, transcript, outline, hoặc mô tả video mẫu ở đây..."></textarea>
@@ -60,13 +56,35 @@
       </div>
       <div id="videoInfo" class="muted">Chưa chọn video.</div>
     </div>
+
+    <div class="card">
+      <h2>3b. AI Tự viết kịch bản</h2>
+      <label>Chủ đề / Câu chuyện</label>
+      <textarea id="aiStoryTopic" placeholder="Ví dụ: Goku đi lạc vào thế giới zombie và chiến đấu bảo vệ trẻ em..."></textarea>
+      <div class="row">
+        <label style="margin:0">Tổng độ dài:</label>
+        <input id="totalDurationVal" type="number" value="1" style="width:60px" />
+        <select id="totalDurationUnit" style="width:80px">
+          <option value="phút">Phút</option>
+          <option value="giây">Giây</option>
+        </select>
+        <button id="writeScriptBtn">AI Viết kịch bản</button>
+      </div>
+    </div>
   </section>
 
   <section class="grid two">
     <div class="card">
-      <h2>Video Analysis</h2>
-      <textarea id="videoAnalysis" placeholder="Phân tích nội dung, nhịp dựng, shot list, visual style sẽ hiện ở đây..."></textarea>
+      <h2>Character Profile</h2>
+      <textarea id="profile" placeholder="Profile nhân vật sẽ hiện ở đây..."></textarea>
     </div>
+    <div class="card">
+      <h2>Video Analysis / AI Script</h2>
+      <textarea id="videoAnalysis" placeholder="Phân tích nội dung, nhịp dựng, shot list, hoặc kịch bản AI sẽ hiện ở đây..."></textarea>
+    </div>
+  </section>
+
+  <section class="grid two">
     <div class="card">
       <h2>4. Batch scenes</h2>
       <div class="row">
