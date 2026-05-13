@@ -157,9 +157,14 @@ STRICT REQUIREMENTS:
 10. Do NOT use headings inside each prompt. Do NOT output JSON. Do NOT output markdown tables.
 11. Before the prompt list, include a short FULL SCRIPT section. Then output PROMPT LIST.
 12. In PROMPT LIST, output exactly ${promptCount} prompts, no fewer and no more.
-13. Each prompt line must include: character identity block(s), visual action, setting, camera angle, lighting, mood, cinematic style, photorealistic, 8k, and [Duration: ${perSeconds}s].
-14. Keep character details repeated in every prompt so the image/video model keeps identity consistent.
-15. Avoid vague text like 'same character' unless the full character identity block is also included.
+13. Each prompt must be a standalone paragraph separated by a blank line.
+14. Every prompt must repeat the FULL character identity block for every character appearing in that scene.
+15. Do NOT use shortened identity like 'GOKU: silver hair UI form' or 'SUPERMAN: flying with red cape' unless the full identity block is also included in the same prompt.
+16. If a character transforms, write a complete transformed identity block in that same prompt, including age/body/face/hair/eyes/outfit/details.
+17. Each prompt line must include: character identity block(s), visual action, setting, camera angle/lens, lighting, mood, cinematic style, photorealistic, 8k, and [Duration: ${perSeconds}s].
+18. Keep character details repeated in every prompt so the image/video model keeps identity consistent.
+19. Avoid vague text like 'same character' unless the full character identity block is also included.
+20. No markdown, no JSON, no bullet points inside the prompt list. One prompt per paragraph.
 
 OUTPUT FORMAT:
 A) FULL SCRIPT
