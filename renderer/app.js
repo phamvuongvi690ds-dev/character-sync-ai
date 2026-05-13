@@ -26,22 +26,38 @@ async function pickImage() {
 
 async function analyzeCharacter() {
   await saveConfig();
-  if (!selectedImage) return alert('Chọn ảnh nhân vật trước.');
+  if (!selectedImage) {
+    alert('Vui lòng chọn ảnh nhân vật trước.');
+    return;
+  }
   const name = $('charName').value.trim() || 'Character';
   const notes = $('manualNotes').value.trim();
   log(`Đang phân tích nhân vật ${name} bằng ${config.model}...`);
-  const body = {
-    contents: [{
-      parts: [
-        { text: `Analyze this reference image and create a strict reusable CHARACTER LOCK PROFILE for image/video prompts. Character name: ${name}. Extra notes: ${notes || 'none'}. Output in English. Include: facial identity, hair, body, outfit, colors, unique marks, style lock, do-not-change rules, negative prompt. Be concise but highly specific. State that future prompts must preserve the same identity, same face, same proportions, same outfit unless explicitly changed.` },
-        { inlineData: { mimeType: selectedImage.mime, data: selectedImage.base64 } }
-      ]
-    }]
-  };
-  const res = await window.api.geminiGenerate({ config, model: config.model, body });
-  if (!res.ok) { log('Lỗi phân tích: ' + JSON.stringify(res.error)); return; }
-  $('profile').value = geminiText(res.data);
-  log('Đã tạo Character Profile.');
+  
+  try {
+    const body = {
+      contents: [{
+        parts: [
+          { text: `Analyze this reference image and create a strict reusable CHARACTER LOCK PROFILE for image/video prompts. Character name: ${name}. Extra notes: ${notes || 'none'}. Output in English. Include: facial identity, hair, body, outfit, colors, unique marks, style lock, do-not-change rules, negative prompt. Be concise but highly specific. State that future prompts must preserve the same identity, same face, same proportions, same outfit unless explicitly changed.` },
+          { inlineData: { mimeType: selectedImage.mime, data: selectedImage.base64 } }
+        ]
+      }]
+    };
+    const res = await window.api.geminiGenerate({ config, model: config.model, body });
+    if (!res.ok) { 
+      log('Lỗi phân tích: ' + (typeof res.error === 'object' ? JSON.stringify(res.error) : res.error)); 
+      return; 
+    }
+    const text = geminiText(res.data);
+    if (!text) {
+        log('Lỗi: AI không trả về dữ liệu phân tích.');
+        return;
+    }
+    $('profile').value = text;
+    log('Đã tạo Character Profile thành công.');
+  } catch (err) {
+    log('Lỗi hệ thống: ' + err.message);
+  }
 }
 
 async function generatePrompts() {
