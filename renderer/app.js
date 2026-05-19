@@ -57,7 +57,7 @@ function updateCharacterList() {
 
 async function loadConfig() {
   config = await window.api.getConfig();
-  $('baseUrl').value = config.baseUrl || 'https://answers-name-theology-ruling.trycloudflare.com';
+  $('baseUrl').value = config.baseUrl || 'https://fisher-fare-wiley-travelling.trycloudflare.com';
   $('apiKey').value = config.apiKey;
   $('model').value = config.model || 'gemini-2.5-flash';
   savedCharacters = config.savedCharacters || [];
@@ -126,6 +126,8 @@ async function analyzeScript() {
 
 async function writeAIScript() {
   await saveConfig();
+  const btn = $('writeScriptBtn');
+  if (btn) { btn.disabled = true; btn.innerText = 'Đang tạo...'; }
   const topic = $('aiStoryTopic').value.trim() || $('scriptInput').value.trim();
   const totalValue = $('totalDurationVal').value || 3;
   const totalUnit = $('totalDurationUnit').value;
@@ -138,8 +140,8 @@ async function writeAIScript() {
   const charName = $('charName').value.trim() || 'Selected character';
   const referenceAnalysis = $('videoAnalysis').value.trim();
 
-  if (!topic) return alert('Nhập chủ đề/kịch bản hoặc phân tích video mẫu trước.');
-  if (!profile) return alert('Chọn hoặc phân tích nhân vật trước.');
+  if (!topic) { if (btn) { btn.disabled = false; btn.innerText = 'AI tự viết kịch bản + prompt'; } return alert('Nhập chủ đề/kịch bản hoặc phân tích video mẫu trước.'); }
+  if (!profile) { if (btn) { btn.disabled = false; btn.innerText = 'AI tự viết kịch bản + prompt'; } return alert('Chọn hoặc phân tích nhân vật trước.'); }
 
   log(`Đang tạo kịch bản ${totalValue} ${totalUnit}; cần ${promptCount} prompt, mỗi prompt ${perValue} ${perUnit}...`);
 
@@ -196,12 +198,19 @@ B) PROMPT LIST (${promptCount} prompts)
 Write all prompt lines in English.` }] }]
   };
 
-  const res = await window.api.geminiGenerate({ config, model: config.model, body });
-  if (!res.ok) { log('Lỗi viết kịch bản/prompt: ' + JSON.stringify(res.error)); return; }
-  const text = geminiText(res.data);
-  $('videoAnalysis').value = text;
-  $('output').value = text;
-  log(`Đã tạo xong ${promptCount} prompt.`);
+  try {
+    const res = await window.api.geminiGenerate({ config, model: config.model, body });
+    if (!res.ok) { log('Lỗi viết kịch bản/prompt: ' + JSON.stringify(res.error)); return; }
+    const text = geminiText(res.data);
+    if (!text) { log('Lỗi: AI không trả về nội dung kịch bản. Raw: ' + JSON.stringify(res.data).slice(0, 1000)); return; }
+    $('videoAnalysis').value = text;
+    $('output').value = text;
+    log(`Đã tạo xong ${promptCount} prompt.`);
+  } catch (err) {
+    log('Lỗi tạo kịch bản: ' + (err?.message || err));
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerText = 'AI tự viết kịch bản + prompt'; }
+  }
 }
 
 async function savePrompts() {

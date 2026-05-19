@@ -14,7 +14,7 @@ function loadConfig() {
         }
     } catch (e) { console.error(e); }
     return {
-        baseUrl: 'https://answers-name-theology-ruling.trycloudflare.com',
+        baseUrl: 'https://fisher-fare-wiley-travelling.trycloudflare.com',
         apiKey: '8d68d3f65067ce72c04ecb600f2a29dd5c518282e3c018f2',
         model: 'gemini-2.5-flash',
         savedCharacters: []
@@ -94,12 +94,15 @@ ipcMain.handle('file:readVideo', async () => {
 });
 
 ipcMain.handle('gemini:generate', async (_event, { config, body, model }) => {
-  const url = `${config.baseUrl.replace(/\/$/, '')}/v1beta/models/${model || config.model}:generateContent?key=${encodeURIComponent(config.apiKey)}`;
+  const baseUrl = (config.baseUrl || 'https://fisher-fare-wiley-travelling.trycloudflare.com').replace(/\/$/, '');
+  const apiKey = config.apiKey || '8d68d3f65067ce72c04ecb600f2a29dd5c518282e3c018f2';
+  const selectedModel = model || config.model || 'gemini-2.5-flash';
+  const url = `${baseUrl}/v1beta/models/${selectedModel}:generateContent?key=${encodeURIComponent(apiKey)}`;
   try {
     const res = await axios.post(url, body, { headers: { 'Content-Type': 'application/json' }, timeout: 300000 });
     return { ok: true, data: res.data };
   } catch (err) {
-    return { ok: false, error: err.response?.data || err.message };
+    return { ok: false, error: err.response?.data || err.message || String(err) };
   }
 });
 
